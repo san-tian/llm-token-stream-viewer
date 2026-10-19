@@ -1,0 +1,124 @@
+{
+ "id": "demo-03_marker_residue_in_content",
+ "object": "chat.completion",
+ "model": "your-model",
+ "choices": [
+  {
+   "index": 0,
+   "finish_reason": "stop",
+   "matched_stop": null,
+   "message": {
+    "role": "assistant",
+    "reasoning_content": "Short reasoning here. ",
+    "content": "Answer body. Note that this control token is delivered as text: </think>"
+   },
+   "logprobs": {
+    "content": [
+     {
+      "token": "Shor",
+      "logprob": -0.05
+     },
+     {
+      "token": "t re",
+      "logprob": -0.05
+     },
+     {
+      "token": "ason",
+      "logprob": -0.05
+     },
+     {
+      "token": "ing ",
+      "logprob": -0.05
+     },
+     {
+      "token": "here",
+      "logprob": -0.05
+     },
+     {
+      "token": ". ",
+      "logprob": -0.05
+     },
+     {
+      "token": "</think>",
+      "logprob": -0.05
+     },
+     {
+      "token": "Answ",
+      "logprob": -0.05
+     },
+     {
+      "token": "er b",
+      "logprob": -0.05
+     },
+     {
+      "token": "ody.",
+      "logprob": -0.05
+     },
+     {
+      "token": " Not",
+      "logprob": -0.05
+     },
+     {
+      "token": "e th",
+      "logprob": -0.05
+     },
+     {
+      "token": "at t",
+      "logprob": -0.05
+     },
+     {
+      "token": "his ",
+      "logprob": -0.05
+     },
+     {
+      "token": "cont",
+      "logprob": -0.05
+     },
+     {
+      "token": "rol ",
+      "logprob": -0.05
+     },
+     {
+      "token": "toke",
+      "logprob": -0.05
+     },
+     {
+      "token": "n is",
+      "logprob": -0.05
+     },
+     {
+      "token": " del",
+      "logprob": -0.05
+     },
+     {
+      "token": "iver",
+      "logprob": -0.05
+     },
+     {
+      "token": "ed a",
+      "logprob": -0.05
+     },
+     {
+      "token": "s te",
+      "logprob": -0.05
+     },
+     {
+      "token": "xt: ",
+      "logprob": -0.05
+     },
+     {
+      "token": "</think>",
+      "logprob": -0.05
+     }
+    ]
+   }
+  }
+ ],
+ "usage": {
+  "prompt_tokens": 128,
+  "completion_tokens": 24,
+  "reasoning_tokens": 6,
+  "total_tokens": 152,
+  "prompt_tokens_details": null
+ }
+}

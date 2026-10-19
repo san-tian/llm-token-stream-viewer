@@ -1,0 +1,14 @@
+{
+ "case_id": "01_special_token_boundary",
+ "run": "demo",
+ "temperature": 0,
+ "max_tokens": 600,
+ "qualifies": true,
+ "finish": "stop",
+ "boundary": 38,
+ "boundary_token": "</think>",
+ "n_tokens": 62,
+ "reasoning_chars": 152,
+ "content_chars": 92,
+ "demo_note": "synthetic data, no real traffic"
+}

@@ -1,0 +1,14 @@
+{
+ "case_id": "03_marker_residue_in_content",
+ "run": "demo",
+ "temperature": 0,
+ "max_tokens": 600,
+ "qualifies": true,
+ "finish": "stop",
+ "boundary": 6,
+ "boundary_token": "</think>",
+ "n_tokens": 24,
+ "reasoning_chars": 22,
+ "content_chars": 72,
+ "demo_note": "synthetic data, no real traffic"
+}

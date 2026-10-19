@@ -1,0 +1,276 @@
+{
+ "id": "demo-01_special_token_boundary",
+ "object": "chat.completion",
+ "model": "your-model",
+ "choices": [
+  {
+   "index": 0,
+   "finish_reason": "stop",
+   "matched_stop": null,
+   "message": {
+    "role": "assistant",
+    "reasoning_content": "The template prefills the opening marker, so the model starts inside a thinking block. Closing it is a single control token, which the server consumes. ",
+    "content": "The opening marker is part of the prompt; the closing one is generated as one control token."
+   },
+   "logprobs": {
+    "content": [
+     {
+      "token": "The ",
+      "logprob": -0.05
+     },
+     {
+      "token": "temp",
+      "logprob": -0.05
+     },
+     {
+      "token": "late",
+      "logprob": -0.05
+     },
+     {
+      "token": " pre",
+      "logprob": -0.05
+     },
+     {
+      "token": "fill",
+      "logprob": -0.05
+     },
+     {
+      "token": "s th",
+      "logprob": -0.05
+     },
+     {
+      "token": "e op",
+      "logprob": -0.05
+     },
+     {
+      "token": "enin",
+      "logprob": -0.05
+     },
+     {
+      "token": "g ma",
+      "logprob": -0.05
+     },
+     {
+      "token": "rker",
+      "logprob": -0.05
+     },
+     {
+      "token": ", so",
+      "logprob": -0.05
+     },
+     {
+      "token": " the",
+      "logprob": -0.05
+     },
+     {
+      "token": " mod",
+      "logprob": -0.05
+     },
+     {
+      "token": "el s",
+      "logprob": -0.05
+     },
+     {
+      "token": "tart",
+      "logprob": -0.05
+     },
+     {
+      "token": "s in",
+      "logprob": -0.05
+     },
+     {
+      "token": "side",
+      "logprob": -0.05
+     },
+     {
+      "token": " a t",
+      "logprob": -0.05
+     },
+     {
+      "token": "hink",
+      "logprob": -0.05
+     },
+     {
+      "token": "ing ",
+      "logprob": -0.05
+     },
+     {
+      "token": "bloc",
+      "logprob": -0.05
+     },
+     {
+      "token": "k. C",
+      "logprob": -0.05
+     },
+     {
+      "token": "losi",
+      "logprob": -0.05
+     },
+     {
+      "token": "ng i",
+      "logprob": -0.05
+     },
+     {
+      "token": "t is",
+      "logprob": -0.05
+     },
+     {
+      "token": " a s",
+      "logprob": -0.05
+     },
+     {
+      "token": "ingl",
+      "logprob": -0.05
+     },
+     {
+      "token": "e co",
+      "logprob": -0.05
+     },
+     {
+      "token": "ntro",
+      "logprob": -0.05
+     },
+     {
+      "token": "l to",
+      "logprob": -0.05
+     },
+     {
+      "token": "ken,",
+      "logprob": -0.05
+     },
+     {
+      "token": " whi",
+      "logprob": -0.05
+     },
+     {
+      "token": "ch t",
+      "logprob": -0.05
+     },
+     {
+      "token": "he s",
+      "logprob": -0.05
+     },
+     {
+      "token": "erve",
+      "logprob": -0.05
+     },
+     {
+      "token": "r co",
+      "logprob": -0.05
+     },
+     {
+      "token": "nsum",
+      "logprob": -0.05
+     },
+     {
+      "token": "es. ",
+      "logprob": -0.05
+     },
+     {
+      "token": "</think>",
+      "logprob": -0.05
+     },
+     {
+      "token": "The ",
+      "logprob": -0.05
+     },
+     {
+      "token": "open",
+      "logprob": -0.05
+     },
+     {
+      "token": "ing ",
+      "logprob": -0.05
+     },
+     {
+      "token": "mark",
+      "logprob": -0.05
+     },
+     {
+      "token": "er i",
+      "logprob": -0.05
+     },
+     {
+      "token": "s pa",
+      "logprob": -0.05
+     },
+     {
+      "token": "rt o",
+      "logprob": -0.05
+     },
+     {
+      "token": "f th",
+      "logprob": -0.05
+     },
+     {
+      "token": "e pr",
+      "logprob": -0.05
+     },
+     {
+      "token": "ompt",
+      "logprob": -0.05
+     },
+     {
+      "token": "; th",
+      "logprob": -0.05
+     },
+     {
+      "token": "e cl",
+      "logprob": -0.05
+     },
+     {
+      "token": "osin",
+      "logprob": -0.05
+     },
+     {
+      "token": "g on",
+      "logprob": -0.05
+     },
+     {
+      "token": "e is",
+      "logprob": -0.05
+     },
+     {
+      "token": " gen",
+      "logprob": -0.05
+     },
+     {
+      "token": "erat",
+      "logprob": -0.05
+     },
+     {
+      "token": "ed a",
+      "logprob": -0.05
+     },
+     {
+      "token": "s on",
+      "logprob": -0.05
+     },
+     {
+      "token": "e co",
+      "logprob": -0.05
+     },
+     {
+      "token": "ntro",
+      "logprob": -0.05
+     },
+     {
+      "token": "l to",
+      "logprob": -0.05
+     },
+     {
+      "token": "ken.",
+      "logprob": -0.05
+     }
+    ]
+   }
+  }
+ ],
+ "usage": {
+  "prompt_tokens": 128,
+  "completion_tokens": 62,
+  "reasoning_tokens": 38,
+  "total_tokens": 190,
+  "prompt_tokens_details": null
+ }
+}

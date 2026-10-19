@@ -1,0 +1,15 @@
+__pycache__/
+*.pyc
+*.pyo
+.env
+secrets*
+*.LOCAL-ONLY*
+# 真实抓取数据不入库
+cases/*/*/body.json
+cases/*/*/request.json
+prefill/
+prefill_attr/
+sse/
+raw_http/
+tokens/
+index.html

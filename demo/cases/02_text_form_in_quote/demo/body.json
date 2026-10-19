@@ -1,0 +1,292 @@
+{
+ "id": "demo-02_text_form_in_quote",
+ "object": "chat.completion",
+ "model": "your-model",
+ "choices": [
+  {
+   "index": 0,
+   "finish_reason": "stop",
+   "matched_stop": null,
+   "message": {
+    "role": "assistant",
+    "reasoning_content": "Let me look at how the parser splits. It searches for the literal string `",
+    "content": "` in the detokenised text, and takes the first occurrence. That is the bug: a quoted mention looks identical. So the fix is to split on the token id instead of on the string."
+   },
+   "logprobs": {
+    "content": [
+     {
+      "token": "Let ",
+      "logprob": -0.05
+     },
+     {
+      "token": "me l",
+      "logprob": -0.05
+     },
+     {
+      "token": "ook ",
+      "logprob": -0.05
+     },
+     {
+      "token": "at h",
+      "logprob": -0.05
+     },
+     {
+      "token": "ow t",
+      "logprob": -0.05
+     },
+     {
+      "token": "he p",
+      "logprob": -0.05
+     },
+     {
+      "token": "arse",
+      "logprob": -0.05
+     },
+     {
+      "token": "r sp",
+      "logprob": -0.05
+     },
+     {
+      "token": "lits",
+      "logprob": -0.05
+     },
+     {
+      "token": ". It",
+      "logprob": -0.05
+     },
+     {
+      "token": " sea",
+      "logprob": -0.05
+     },
+     {
+      "token": "rche",
+      "logprob": -0.05
+     },
+     {
+      "token": "s fo",
+      "logprob": -0.05
+     },
+     {
+      "token": "r th",
+      "logprob": -0.05
+     },
+     {
+      "token": "e li",
+      "logprob": -0.05
+     },
+     {
+      "token": "tera",
+      "logprob": -0.05
+     },
+     {
+      "token": "l st",
+      "logprob": -0.05
+     },
+     {
+      "token": "ring",
+      "logprob": -0.05
+     },
+     {
+      "token": " `",
+      "logprob": -0.05
+     },
+     {
+      "token": "</",
+      "logprob": -0.05
+     },
+     {
+      "token": "think",
+      "logprob": -0.05
+     },
+     {
+      "token": ">",
+      "logprob": -0.05
+     },
+     {
+      "token": "` in",
+      "logprob": -0.05
+     },
+     {
+      "token": " the",
+      "logprob": -0.05
+     },
+     {
+      "token": " det",
+      "logprob": -0.05
+     },
+     {
+      "token": "oken",
+      "logprob": -0.05
+     },
+     {
+      "token": "ised",
+      "logprob": -0.05
+     },
+     {
+      "token": " tex",
+      "logprob": -0.05
+     },
+     {
+      "token": "t, a",
+      "logprob": -0.05
+     },
+     {
+      "token": "nd t",
+      "logprob": -0.05
+     },
+     {
+      "token": "akes",
+      "logprob": -0.05
+     },
+     {
+      "token": " the",
+      "logprob": -0.05
+     },
+     {
+      "token": " fir",
+      "logprob": -0.05
+     },
+     {
+      "token": "st o",
+      "logprob": -0.05
+     },
+     {
+      "token": "ccur",
+      "logprob": -0.05
+     },
+     {
+      "token": "renc",
+      "logprob": -0.05
+     },
+     {
+      "token": "e. T",
+      "logprob": -0.05
+     },
+     {
+      "token": "hat ",
+      "logprob": -0.05
+     },
+     {
+      "token": "is t",
+      "logprob": -0.05
+     },
+     {
+      "token": "he b",
+      "logprob": -0.05
+     },
+     {
+      "token": "ug: ",
+      "logprob": -0.05
+     },
+     {
+      "token": "a qu",
+      "logprob": -0.05
+     },
+     {
+      "token": "oted",
+      "logprob": -0.05
+     },
+     {
+      "token": " men",
+      "logprob": -0.05
+     },
+     {
+      "token": "tion",
+      "logprob": -0.05
+     },
+     {
+      "token": " loo",
+      "logprob": -0.05
+     },
+     {
+      "token": "ks i",
+      "logprob": -0.05
+     },
+     {
+      "token": "dent",
+      "logprob": -0.05
+     },
+     {
+      "token": "ical",
+      "logprob": -0.05
+     },
+     {
+      "token": ". ",
+      "logprob": -0.05
+     },
+     {
+      "token": "So t",
+      "logprob": -0.05
+     },
+     {
+      "token": "he f",
+      "logprob": -0.05
+     },
+     {
+      "token": "ix i",
+      "logprob": -0.05
+     },
+     {
+      "token": "s to",
+      "logprob": -0.05
+     },
+     {
+      "token": " spl",
+      "logprob": -0.05
+     },
+     {
+      "token": "it o",
+      "logprob": -0.05
+     },
+     {
+      "token": "n th",
+      "logprob": -0.05
+     },
+     {
+      "token": "e to",
+      "logprob": -0.05
+     },
+     {
+      "token": "ken ",
+      "logprob": -0.05
+     },
+     {
+      "token": "id i",
+      "logprob": -0.05
+     },
+     {
+      "token": "nste",
+      "logprob": -0.05
+     },
+     {
+      "token": "ad o",
+      "logprob": -0.05
+     },
+     {
+      "token": "f on",
+      "logprob": -0.05
+     },
+     {
+      "token": " the",
+      "logprob": -0.05
+     },
+     {
+      "token": " str",
+      "logprob": -0.05
+     },
+     {
+      "token": "ing.",
+      "logprob": -0.05
+     }
+    ]
+   }
+  }
+ ],
+ "usage": {
+  "prompt_tokens": 128,
+  "completion_tokens": 66,
+  "reasoning_tokens": 19,
+  "total_tokens": 194,
+  "prompt_tokens_details": null
+ }
+}

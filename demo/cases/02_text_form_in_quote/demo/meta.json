@@ -1,0 +1,14 @@
+{
+ "case_id": "02_text_form_in_quote",
+ "run": "demo",
+ "temperature": 0,
+ "max_tokens": 600,
+ "qualifies": true,
+ "finish": "stop",
+ "boundary": 19,
+ "boundary_token": "</",
+ "n_tokens": 66,
+ "reasoning_chars": 74,
+ "content_chars": 174,
+ "demo_note": "synthetic data, no real traffic"
+}

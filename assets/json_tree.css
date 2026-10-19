@@ -1,0 +1,72 @@
+/* ---------- 可折叠 JSON 树 样式 ---------- */
+.jsontree{border:1px solid var(--line);border-radius:6px;background:#0b0f14}
+.jt-bar{display:flex;gap:8px;align-items:center;flex-wrap:wrap;padding:8px 10px;border-bottom:1px solid var(--line);
+        position:sticky;top:0;background:#0b0f14;border-radius:6px 6px 0 0;z-index:2}
+.jt-bar button{background:#1c2128;border:1px solid var(--line);color:var(--fg);padding:3px 9px;border-radius:5px;
+               cursor:pointer;font-size:12px}
+.jt-bar button:hover{border-color:var(--accent)}
+.jt-bar input[type=search]{background:#0d1117;border:1px solid var(--line);color:var(--fg);padding:3px 8px;
+                           border-radius:5px;font-size:12px;width:170px;font-family:var(--mono)}
+.jt-stat{color:var(--dim);font-size:11.5px;font-family:var(--mono);margin-left:auto}
+.jt-body{padding:8px 10px 12px;max-height:64vh;overflow:auto;font-family:var(--mono);font-size:12.5px;line-height:1.6}
+.tnode{position:relative}
+.tkids{display:none;margin-left:16px;border-left:1px dashed #2b3138;padding-left:10px}
+.tnode.open>.tkids{display:block}
+.thead{white-space:pre-wrap;word-break:break-word}
+.tgl{display:inline-block;width:12px;color:var(--dim);cursor:pointer;user-select:none}
+.tgl.leafspace{cursor:default}
+.composite>.thead>.tgl:hover{color:var(--fg)}
+.tkey{color:var(--accent);cursor:pointer;border-radius:3px;padding:0 2px}
+.tkey:hover{background:#58a6ff22}
+.tkey.copied{background:#7ee78744}
+.tmeta{color:var(--dim);font-size:11.5px;margin-left:6px}
+.tscalar{word-break:break-word}
+.t-string{color:var(--fg)}
+.t-number{color:#79c0ff}
+.t-boolean{color:#ffa657}
+.t-null{color:#8b949e;font-style:italic}
+.tq{color:var(--dim)}
+.jt-more{margin-left:8px;font-size:11px;padding:1px 7px;border-radius:9px;background:#1c2128;
+         border:1px solid var(--line);color:var(--dim);cursor:pointer}
+.jt-more:hover{color:var(--fg);border-color:var(--accent)}
+.tnode.hit>.thead>.tkey{background:#f2cc6044;box-shadow:0 0 0 1px #f2cc60}
+
+/* 思考优先：键名着色与顺序徽标 */
+.tkey.k-reason{color:#c9a7ff;font-weight:600}
+.tkey.k-content{color:#7ee787;font-weight:600}
+.tbadge{margin-left:8px;font-size:10.5px;padding:0 6px;border-radius:9px;background:#c9a7ff22;
+        color:#c9a7ff;border:1px solid #c9a7ff44;cursor:help}
+.jt-chk{display:flex;align-items:center;gap:5px;font-size:12px;color:var(--dim);cursor:pointer}
+.jt-chk input{cursor:pointer}
+.jt-chk:hover{color:var(--fg)}
+
+/* 非常见字符可见化 */
+.uchip{background:#ff7b7233;color:#ff9d95;border:1px solid #ff7b7266;border-radius:4px;
+       padding:0 4px;margin:0 1px;font-size:11px;white-space:nowrap;cursor:help}
+.uchip .uc-name{margin-right:3px}
+.uchip .uc-code{color:#f2cc60;font-weight:700}
+.uchip .uc-bytes{color:#8b949e;margin-left:3px;font-size:10px}
+.ubadge{margin-left:8px;font-size:10.5px;padding:0 6px;border-radius:9px;background:#ff7b7222;
+        color:#ff9d95;border:1px solid #ff7b7244;cursor:help}
+.uc-hit{color:#ff9d95}
+.uc-detail{color:var(--dim);font-size:11px}
+.jt-hex{background:#05080c;border:1px solid var(--line);border-radius:5px;padding:8px 10px;margin:6px 0 2px;
+        font-size:11.5px;line-height:1.45;max-height:260px;overflow:auto;white-space:pre;color:#9fb4c7}
+
+.uesc{background:#58a6ff1a;color:#79c0ff;border-radius:3px;padding:0 2px;font-size:11.5px;cursor:help}
+mark.jesce{background:#58a6ff26;color:#79c0ff;border-radius:3px;padding:0 1px}
+
+mark.tag{background:#f2cc6033;color:#f2cc60;border-radius:3px;padding:0 2px}
+
+/* 图例 & 开关计数 */
+.jt-viscount{color:var(--dim);font-size:11px}
+.jt-viscount.has{color:#ff9d95;font-weight:600}
+.jt-help{background:#1c2128;border:1px solid var(--line);color:var(--dim);padding:3px 9px;
+         border-radius:5px;cursor:pointer;font-size:12px}
+.jt-help:hover{color:var(--fg);border-color:var(--accent)}
+.jt-legendbox{border-bottom:1px solid var(--line);background:#0f141b;padding:10px 12px;font-size:12px;
+              line-height:1.65;color:var(--fg)}
+.jt-legendbox table.jt-lg{border-collapse:collapse;margin:6px 0 8px}
+.jt-legendbox table.jt-lg td{border:1px solid var(--line);padding:4px 8px;vertical-align:top}
+.jt-legendbox table.jt-lg td:first-child{white-space:nowrap;width:1%}
+.jt-lgsample{border-top:1px dashed var(--line);padding-top:7px;font-family:var(--mono)}
