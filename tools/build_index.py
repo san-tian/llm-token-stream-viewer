@@ -254,7 +254,8 @@ def collect_runs(cid, meta_extra):
             rj, ch, msg, R, C = {}, {}, {}, "", ""
         _ok, _info = repro_judge(rd / "body.json")
         _usage = (rj.get("usage") or {}) if 'rj' in dir() else {}
-        light = rd.name != keep_dir and rd.name not in keep_by_source.values()  # 每个来源保留一条完整响应
+        light = (rd.name != keep_dir and rd.name not in keep_by_source.values()
+                 and not m.get("embed_full_response", False))  # 可为逐次对照保留所有完整响应
         runs.append({
             "label": m.get("run") or rd.name,
             "primary": rd.name == keep_dir,
