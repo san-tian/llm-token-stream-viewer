@@ -50,6 +50,7 @@ def build(cid, reasoning, content, *, boundary_mode, extra_tokens_after_content=
             "qualifies": True, "finish": finish, "boundary": k,
             "boundary_token": boundary_tokens[0], "n_tokens": len(stream),
             "reasoning_chars": len(delivered_reasoning), "content_chars": len(delivered_content),
+            "inference_source": "合成示例",
             "demo_note": "synthetic data, no real traffic"}
     d = DEMO / cid / "demo"
     d.mkdir(parents=True, exist_ok=True)

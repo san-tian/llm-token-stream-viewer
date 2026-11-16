@@ -36,3 +36,5 @@ export REMOTE_HOST=127.0.0.1 REMOTE_PORT=22  # 仅 rt_render_remote 需要
 python3 tools/build_index.py                                   # → ./index.html
 DATA_DIR=/path/to/data OUT_HTML=/tmp/a.html python3 tools/build_index.py
 ```
+
+来源标签：chat 与原生 token 采集可设置 INFERENCE_SOURCE；构建时读取运行 meta.json 的 inference_source，或案例索引的同名默认值。未标注时回退到 endpoint 的源站，再回退到“未标注来源”。左侧筛选按案例计数，同一案例每个来源保留一份完整响应。

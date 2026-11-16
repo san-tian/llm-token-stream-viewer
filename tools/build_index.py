@@ -13,6 +13,7 @@ import json
 import os
 import pathlib
 import sys
+from urllib.parse import urlsplit
 
 ROOT = pathlib.Path(__file__).resolve().parent
 PF_ATTR = ROOT / "prefill_attr"
@@ -95,6 +96,9 @@ def verdict(reasoning, content):
     if not content:
         return {"kind": "no_content", "label": "content 为空（未发生字段切换）",
                 "unbalanced_quote": None, "ends_sentence": None, "markers_in_content": 0}
+    if not reasoning.strip():
+        return {"kind": "clean", "label": "仅 content（没有 reasoning/content 字段边界）",
+                "unbalanced_quote": False, "ends_sentence": None, "markers_in_content": 0}
     tail = reasoning.rstrip()
     unbal = {"dq": reasoning.count('"') % 2 == 1, "bt": reasoning.count("`") % 2 == 1}
     ends = bool(tail) and tail[-1] in SENT_END
@@ -180,6 +184,29 @@ def parse_logprobs(rj, R, C):
         return None
 
 
+def inference_source(meta, defaults=None):
+    """Return an explicit source label, a credential-free endpoint origin, or unknown."""
+    defaults = defaults or {}
+    label = meta.get("inference_source") or defaults.get("inference_source")
+    if not label:
+        label = meta.get("endpoint")
+    if not isinstance(label, str) or not label.strip():
+        return "未标注来源"
+    label = label.strip()
+    if label.lower().startswith(("http://", "https://")):
+        try:
+            parsed = urlsplit(label)
+            host = parsed.hostname
+            if not host:
+                return "未标注来源"
+            host = "[" + host + "]" if ":" in host else host
+            port = ":" + str(parsed.port) if parsed.port is not None else ""
+            return parsed.scheme.lower() + "://" + host + port
+        except ValueError:
+            return "未标注来源"
+    return label
+
+
 def collect_runs(cid, meta_extra):
     cdir = CASES / cid
     runs = []
@@ -198,9 +225,18 @@ def collect_runs(cid, meta_extra):
         return t is None or t <= 1.05
 
     all_names = [d.name for d in rdirs]
-    # 与展示逻辑一致：忠实温度下合格 → 忠实温度 → 任意合格 → 第一个
-    keep_dir = (( [n for n in qual_dirs if _faith(n)] or [n for n in all_names if _faith(n)]
-                 or qual_dirs or all_names ) or [None])[0]
+    metadata = {d.name: json.loads((d / "meta.json").read_text()) if (d / "meta.json").exists() else {}
+                for d in rdirs}
+    sources = {name: inference_source(metadata[name], meta_extra) for name in all_names}
+
+    def preferred(names):
+        qualified = [n for n in names if n in qual_dirs]
+        return (([n for n in qualified if _faith(n)] or [n for n in names if _faith(n)]
+                 or qualified or names) or [None])[0]
+
+    keep_dir = preferred(all_names)
+    keep_by_source = {source: preferred([n for n in all_names if sources[n] == source])
+                      for source in set(sources.values())}
     for rd in rdirs:
         m = json.loads((rd / "meta.json").read_text()) if (rd / "meta.json").exists() else {}
         req, res = blob(rd / "request.json"), blob(rd / "body.json")
@@ -215,10 +251,12 @@ def collect_runs(cid, meta_extra):
             rj, ch, msg, R, C = {}, {}, {}, "", ""
         _ok, _info = repro_judge(rd / "body.json")
         _usage = (rj.get("usage") or {}) if 'rj' in dir() else {}
-        light = (rd.name != keep_dir)   # 只给被展示的那条嵌入完整数据（含 logprobs）
+        light = rd.name != keep_dir and rd.name not in keep_by_source.values()  # 每个来源保留一条完整响应
         runs.append({
             "label": m.get("run") or rd.name,
             "primary": rd.name == keep_dir,
+            "primaryForSource": keep_by_source[sources[rd.name]] == rd.name,
+            "source": sources[rd.name],
             "qualifies": bool(_ok), "reproInfo": _info,
             "variant": bool(m.get("variant")), "variantNote": m.get("variant_note") or "",
             "request": req if not light else {"name": req["name"], "bytes": req["bytes"], "sha256": req["sha256"], "text": "", "stripped": True},
@@ -329,7 +367,7 @@ def case_evidence(cid, runs, tok, rolls=None):
                       "residue": sorted(residue), "no_content": no_content}}
 
 
-def collect_tokens(slug):
+def collect_tokens(slug, defaults=None):
     d = TOK / slug
     if not (d / "meta.json").exists():
         return None
@@ -372,7 +410,7 @@ def collect_tokens(slug):
                 drops.append({"text": joined[i1:i2], "kind": tag})
     ch = (chat.get("choices") or [{}])[0].get("message") or {}
     return {
-        "slug": slug, "prompt": meta.get("prompt", ""), "wrapped": meta.get("wrapped_prompt", ""),
+        "slug": slug, "source": inference_source(meta, defaults), "prompt": meta.get("prompt", ""), "wrapped": meta.get("wrapped_prompt", ""),
         "out": {"tokens": tk, "text": keep.get("text") or "", "n": len(tk),
                 "finish": mi.get("finish_reason"), "spec": mi.get("spec_accept_rate"),
                 "reasoning_tokens": mi.get("reasoning_tokens")},
@@ -413,9 +451,9 @@ def main():
          for d in sorted(CASES.iterdir()) if d.is_dir()] if CASES.exists() else [])
     for entry in _entries:
         cid = entry["case_id"]
-        runs = collect_runs(cid, {})
+        runs = collect_runs(cid, entry)
         tok_slug = CASE2TOK.get(cid, cid)
-        tok = collect_tokens(tok_slug)
+        tok = collect_tokens(tok_slug, entry)
         if tok:
             used_tok.add(tok_slug)
         if not runs and not tok:
@@ -430,8 +468,21 @@ def main():
         show = [r for r in runs if r.get("primary")] or runs
         agg = {k: sum(1 for r in runs if r["verdict"]["kind"] == k)
                for k in ("seam", "residue", "clean", "no_content")}
+        source_views = {}
+        for source in {r["source"] for r in runs} | ({tok["source"]} if tok else set()):
+            source_runs = [r for r in runs if r["source"] == source]
+            source_qual = [r for r in source_runs if r["qualifies"]]
+            source_tok = tok if tok and tok["source"] == source else None
+            source_views[source] = {
+                "evidence": case_evidence(cid, source_runs, source_tok),
+                "nRepro": len(source_qual),
+                "nFaithful": sum(_faithful(r) for r in source_runs),
+                "nFaithfulRepro": sum(_faithful(r) for r in source_qual),
+            }
         items.append({"kind": "case", "id": cid, "name": entry["name"],
                       "kindLabel": "人工构造" if entry["kind"] == "controlled" else "历史窗口",
+                      "sourceViews": source_views,
+                      "sources": sorted({r["source"] for r in runs} | ({tok["source"]} if tok else set())),
                       "observation": entry["observation"],
                       "note": expected.get(cid, {}).get("verification_note", ""),
                       "evidence": case_evidence(cid, runs, tok, collect_rolls(cid)),
@@ -448,7 +499,7 @@ def main():
         tok = collect_tokens(d.name)
         if tok:
             items.append({"kind": "token", "id": d.name, "name": "token 探针", "kindLabel": "token 探针",
-                          "observation": "原始 token 流", "note": "", "runs": [], "agg": {},
+                          "observation": "原始 token 流", "sources": [tok["source"]], "note": "", "runs": [], "agg": {},
                           "tok": tok, "aggLabel": f"{tok['out']['n']} tokens"})
 
     data = {
@@ -504,6 +555,12 @@ TEMPLATE = r"""<!doctype html>
                padding:6px 9px;border-radius:7px;margin-bottom:5px;cursor:pointer;font-size:12px;display:block}
   aside button:hover{border-color:#4d5560}
   aside button.on{background:#1f6feb22;border-color:var(--accent)}
+  aside button[hidden]{display:none}
+  .source-filter{margin-bottom:12px;padding-bottom:10px;border-bottom:1px solid var(--line)}
+  .source-filter label{display:block;margin:4px 0;color:var(--dim);font-size:12px}
+  .source-filter select{width:100%;padding:7px;background:var(--panel);color:var(--fg);border:1px solid var(--line);border-radius:6px}
+  .source-label{font-size:11px;color:var(--accent);margin-top:4px;overflow-wrap:anywhere}
+  #sourceCount{font-size:11px;color:var(--dim);margin-top:5px}
   .cid{font-family:var(--mono);font-size:11.5px}
   .nm{color:var(--dim);font-size:11px;margin-top:2px}
   .tag{display:inline-block;font-size:10px;padding:0 5px;border-radius:8px;font-family:var(--mono);margin-right:4px}
@@ -624,7 +681,14 @@ TEMPLATE = r"""<!doctype html>
   <div class="meta" id="hmeta"></div>
 </header>
 <div class="layout">
-  <aside><div id="list"></div>
+  <aside>
+    <section class="source-filter" aria-label="来源筛选">
+      <h2>Source · 推理来源</h2>
+      <label for="sourceFilter">按推理来源筛选</label>
+      <select id="sourceFilter"></select>
+      <div id="sourceCount" role="status" aria-live="polite"></div>
+    </section>
+    <div id="list"></div>
     <h2>特殊 token 图谱</h2>
     <div class="mono" id="spmap" style="font-size:10.5px;line-height:1.7;color:#8b949e"></div>
   </aside>
@@ -656,7 +720,12 @@ document.getElementById('spmap').innerHTML =
   Object.entries(D.meta.specialMap).map(([id,t]) => `${esc(t)} = ${id}`).join('<br>');
 
 let cur = 0, runIdx = 0, view = 'req', showAll = false;
-function runsOf(it) { return (showAll && it.allRuns) ? it.allRuns : (it.runs || []); }
+let selectedSource = '';
+function runsOf(it) {
+  if (!selectedSource) return (showAll && it.allRuns) ? it.allRuns : (it.runs || []);
+  const matching = (it.allRuns || it.runs || []).filter(r => r.source === selectedSource);
+  return showAll ? matching : matching.filter(r => r.primaryForSource);
+}
 const TABS = [
   ['req','① 请求 / prompt'],
   ['res','② 响应（chat 交付）'],
@@ -669,6 +738,24 @@ const TABS = [
   ['hdr','⑧ 头部'],
 ];
 const list = document.getElementById('list');
+const sourceFilter = document.getElementById('sourceFilter');
+const sourceCount = document.getElementById('sourceCount');
+const sourceTotals = new Map();
+D.items.forEach(it => (it.sources || []).forEach(source =>
+  sourceTotals.set(source, (sourceTotals.get(source) || 0) + 1)));
+[['', D.items.length], ...[...sourceTotals].sort((a, b) => a[0].localeCompare(b[0]))].forEach(([source, count]) => {
+  const option = document.createElement('option');
+  option.value = source;
+  option.textContent = `${source || '全部来源'}（${count} 个案例）`;
+  sourceFilter.append(option);
+});
+function matchesSource(it) { return !selectedSource || (it.sources || []).includes(selectedSource); }
+function tokenOf(it) { return it.tok && (!selectedSource || it.tok.source === selectedSource) ? it.tok : null; }
+sourceFilter.onchange = () => {
+  selectedSource = sourceFilter.value; runIdx = 0; showAll = false;
+  refreshList();
+};
+
 function badge(it) {
   const tags = [];
   if (it.runs && it.runs.length) tags.push(`<span class="tag ${it.agg && it.agg.seam ? 't-seam' : 't-ok'}">${it.runs.length} 次</span>`);
@@ -682,24 +769,39 @@ function badge(it) {
 D.items.forEach((it, i) => {
   const b = document.createElement('button');
   b.innerHTML = `<div class="cid">${esc(it.id)}</div>
-     <div class="nm">${esc(it.name)} · ${esc(it.observation)}</div>${badge(it)}`;
+     <div class="nm">${esc(it.name)} · ${esc(it.observation)}</div><div class="source-label">来源：${esc((it.sources || []).join(" · "))}</div>${badge(it)}`;
   b.onclick = () => { cur = i; runIdx = 0; showAll = false; view = (it.runs || []).length ? 'req' : 'tok'; refreshList(); };
   list.append(b);
 });
 function refreshList() {
-  [...list.children].forEach((x, j) => x.classList.toggle('on', j === cur));
+  const visible = D.items.map((it, i) => matchesSource(it) ? i : -1).filter(i => i >= 0);
+  if (!visible.includes(cur)) {
+    cur = visible[0] ?? -1; runIdx = 0; showAll = false;
+    view = cur >= 0 && (D.items[cur].runs || []).length ? 'req' : 'tok';
+  }
+  [...list.children].forEach((button, i) => {
+    button.hidden = !visible.includes(i);
+    button.classList.toggle('on', i === cur);
+  });
+  sourceCount.textContent = `显示 ${visible.length} / ${D.items.length} 个案例`;
+  if (cur < 0) {
+    document.getElementById('info').textContent = '当前来源没有案例';
+    document.getElementById('tabs').replaceChildren();
+    document.getElementById('pane').replaceChildren();
+    return;
+  }
   renderTabs(); render();
 }
 function tabsFor(it) {
-  const rs = runsOf(it);
+  const rs = runsOf(it), t = tokenOf(it);
   return TABS.filter(([k]) =>
-    (k === 'req' && (rs.length || it.tok)) ||
-    (k === 'res' && (rs.length || (it.tok && (it.tok.chat.reasoning || it.tok.chat.content)))) ||
+    (k === 'req' && (rs.length || t)) ||
+    (k === 'res' && (rs.length || (t && (t.chat.reasoning || t.chat.content)))) ||
     (k === 'lp' && rs.some(r => r.logprobs)) ||
-    (k === 'tok' && it.tok) || (k === 'tokin' && it.tok && it.tok.input.n) ||
-    (k === 'verdict' && it.tok) ||
+    (k === 'tok' && t) || (k === 'tokin' && t && t.input.n) ||
+    (k === 'verdict' && t) ||
     (k === 'prefill' && it.prefill) ||
-    (k === 'seam' && (it.runs.length || it.tok)) ||
+    (k === 'seam' && (rs.length || t)) ||
     (k === 'hdr' && rs.length));
 }
 function renderTabs() {
@@ -965,7 +1067,12 @@ function tokenGrid(container, toks, total, detailEl, label) {
 }
 
 function render() {
-  const it = D.items[cur], runs = runsOf(it), run = runs[runIdx] || null, t = it.tok;
+  const original = D.items[cur];
+  const it = selectedSource && original.sourceViews && original.sourceViews[selectedSource]
+    ? {...original, ...original.sourceViews[selectedSource],
+       allRuns: (original.allRuns || []).filter(r => r.source === selectedSource)}
+    : original;
+  const runs = runsOf(it), run = runs[runIdx] || null, t = tokenOf(it);
   // 概要
   let info = `<div class="hd"><h2>${esc(it.id)} · ${esc(it.name)}</h2>
       <span class="k">${esc(it.kindLabel)} · 观察点：${esc(it.observation)}</span></div>`;
@@ -984,6 +1091,7 @@ function render() {
   if (run) {
     const m = run.meta;
     info += `<table>
+      <tr><th>推理来源</th><td class="m" colspan="3">${esc(run.source)}</td></tr>
       <tr><th>本次运行</th><td class="m">${esc(run.label)}${run.qualifies ? ' · ✅ 已复现切断（且带 token 序列）' : ''}${run.variant ? ' · ⚠️ 变体' : ''}</td>
           <th>结束方式</th><td class="m">${endBadge(m)}</td></tr>
       <tr><th>输出预算</th><td class="m">${esc(String(m.completion_tokens))} / ${esc(String(m.max_tokens))} tokens

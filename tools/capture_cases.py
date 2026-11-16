@@ -152,6 +152,7 @@ def main():
         nred = redact_trace(out / "trace.txt", KEY.encode())
         meta = {"case_id": cid, "run": RUN_LABEL, "name": entry["name"], "kind": entry["kind"],
                 "observation": entry["observation"],
+                "inference_source": os.environ.get("INFERENCE_SOURCE", ""),
                 "endpoint": BASE, "model": MODEL, "stream": False,
                 "max_tokens": MAX_TOKENS, "reasoning_effort": EFFORT,
                 "elapsed_seconds": round(el, 1), "curl_exit": r.returncode,
