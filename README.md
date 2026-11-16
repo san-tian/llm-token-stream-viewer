@@ -68,6 +68,32 @@ endpoint URL 源站（协议、主机、端口，去除账号、路径、查询�
 例如，同一个 case 的 run1 标记“部署 A”、run2 标记“部署 B”，选择“部署 B”后，
 请求、响应和 logprobs 来自 run2。原生 /generate token 数据仅在其来源匹配时显示。
 
+## 每次实验的 Env / Flags
+
+每个运行的 Env / Flags 页保存并展示两栏配置，可下载 JSON，选择另一实验并排对比，
+或勾选“只看已记录的取值差异”。配置随运行切换，不使用其他运行的设置。
+黄色表示双方已记录且取值不同；缺项显示“—”，不把没有记录误当成配置相同或不同。
+
+可选输入放在 cases/<case>/<run>/ 或 tokens/<slug>/：
+
+    env.json     {"CUDA_VISIBLE_DEVICES": null, "EXAMPLE_CACHE_DIR": "/cache"}
+    flags.json   {"--attention-backend": "example", "--disable-cuda-graph": true}
+
+也支持 meta.json 中的 deployment_env / deployment_flags 对象；同名 JSON 文件优先。
+环境变量的 null 表示显式 unset；Flags 中的 null 表示未设置。
+非自部署和没有历史配置的实验可以不提供这两个文件，两栏保持空记录。
+meta.json 的 runtime_config_note 可注明“启动脚本显式设置”“启动日志生效参数（含默认值）”
+或其他来源与限制，避免把重建值当作原始命令行。
+
+采集脚本可在请求前保存显式提供的配置快照：
+
+    export DEPLOYMENT_ENV_FILE=/path/to/server-env.json
+    export DEPLOYMENT_FLAGS_FILE=/path/to/server-flags.json
+
+这些文件应描述推理服务；脚本不会读取采集客户端的完整环境。没有提供文件时写入空对象，
+以免复用输出目录时残留前一实验的配置。保存和渲染时会遮挡常见凭据字段、Bearer 值及 URL 的账号和签名查询参数。
+真实部署配置与真实抓取数据一并留在本地，仓库示例仅使用合成数据。
+
 ## 背后的结论（这套工具查出来的）
 
 详见 [`docs/mechanism.md`](docs/mechanism.md)。要点：

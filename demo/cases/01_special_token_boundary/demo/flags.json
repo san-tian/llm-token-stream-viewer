@@ -1,0 +1,4 @@
+{
+  "--example-attention-backend": "example_a",
+  "--disable-cuda-graph": false
+}

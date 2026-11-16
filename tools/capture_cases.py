@@ -19,6 +19,7 @@ import re
 import subprocess
 import sys
 import time
+from runtime_config import save_runtime_config
 
 ROOT = pathlib.Path(__file__).resolve().parent
 CASES = ROOT / "cases"
@@ -135,6 +136,7 @@ def main():
         case = json.loads((KIT / entry["file"]).read_text())
         out = CASES / cid / RUN_LABEL
         out.mkdir(parents=True, exist_ok=True)
+        save_runtime_config(out)
         (out / "request.json").write_text(
             json.dumps(payload_for(case), ensure_ascii=False, indent=2), encoding="utf-8")
         nreq = len(case["messages"]) + 1

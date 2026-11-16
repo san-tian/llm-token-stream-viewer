@@ -51,9 +51,14 @@ def build(cid, reasoning, content, *, boundary_mode, extra_tokens_after_content=
             "boundary_token": boundary_tokens[0], "n_tokens": len(stream),
             "reasoning_chars": len(delivered_reasoning), "content_chars": len(delivered_content),
             "inference_source": "合成示例",
+            "runtime_config_note": "合成配置，仅用于演示；不对应真实部署。",
             "demo_note": "synthetic data, no real traffic"}
     d = DEMO / cid / "demo"
     d.mkdir(parents=True, exist_ok=True)
+    env = {"EXAMPLE_CACHE_DIR": "/example/cache", "CUDA_VISIBLE_DEVICES": None if cid.startswith("01") else "0"} if not cid.startswith("03") else {}
+    flags = {"--example-attention-backend": "example_a" if cid.startswith("01") else "example_b", "--disable-cuda-graph": not cid.startswith("01")} if env else {}
+    (d / "env.json").write_text(json.dumps(env, ensure_ascii=False, indent=2))
+    (d / "flags.json").write_text(json.dumps(flags, ensure_ascii=False, indent=2))
     (d / "request.json").write_text(json.dumps(
         {"model": "your-model", "messages": [{"role": "user", "content": f"demo prompt for {cid}"}],
          "max_tokens": 600, "temperature": 0}, ensure_ascii=False, indent=1))
