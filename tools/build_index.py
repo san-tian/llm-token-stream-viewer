@@ -16,6 +16,9 @@ import sys
 from urllib.parse import urlsplit
 
 ROOT = pathlib.Path(__file__).resolve().parent
+if str(ROOT) not in sys.path:
+    sys.path.insert(0, str(ROOT))
+from runtime_config import read_runtime_config
 PF_ATTR = ROOT / "prefill_attr"
 
 
@@ -251,12 +254,15 @@ def collect_runs(cid, meta_extra):
             rj, ch, msg, R, C = {}, {}, {}, "", ""
         _ok, _info = repro_judge(rd / "body.json")
         _usage = (rj.get("usage") or {}) if 'rj' in dir() else {}
-        light = rd.name != keep_dir and rd.name not in keep_by_source.values()  # 每个来源保留一条完整响应
+        light = (rd.name != keep_dir and rd.name not in keep_by_source.values()
+                 and not m.get("embed_full_response", False))  # 可为逐次对照保留所有完整响应
         runs.append({
             "label": m.get("run") or rd.name,
             "primary": rd.name == keep_dir,
             "primaryForSource": keep_by_source[sources[rd.name]] == rd.name,
+            "embedFullResponse": bool(m.get("embed_full_response", False)),
             "source": sources[rd.name],
+            "runtimeConfig": read_runtime_config(rd, m),
             "qualifies": bool(_ok), "reproInfo": _info,
             "variant": bool(m.get("variant")), "variantNote": m.get("variant_note") or "",
             "request": req if not light else {"name": req["name"], "bytes": req["bytes"], "sha256": req["sha256"], "text": "", "stripped": True},
@@ -410,6 +416,7 @@ def collect_tokens(slug, defaults=None):
                 drops.append({"text": joined[i1:i2], "kind": tag})
     ch = (chat.get("choices") or [{}])[0].get("message") or {}
     return {
+        "runtimeConfig": read_runtime_config(d, meta),
         "slug": slug, "source": inference_source(meta, defaults), "prompt": meta.get("prompt", ""), "wrapped": meta.get("wrapped_prompt", ""),
         "out": {"tokens": tk, "text": keep.get("text") or "", "n": len(tk),
                 "finish": mi.get("finish_reason"), "spec": mi.get("spec_accept_rate"),
@@ -465,7 +472,7 @@ def main():
         f_qual = [r for r in qual if _faithful(r)]
         f_all = [r for r in runs if _faithful(r)]
         # 展示哪一条由 collect_runs 统一决定（primary），保证"被展示的运行一定带 logprobs"
-        show = [r for r in runs if r.get("primary")] or runs
+        show = [r for r in runs if r.get("primary") or r.get("embedFullResponse")] or runs
         agg = {k: sum(1 for r in runs if r["verdict"]["kind"] == k)
                for k in ("seam", "residue", "clean", "no_content")}
         source_views = {}
@@ -559,6 +566,12 @@ TEMPLATE = r"""<!doctype html>
   .source-filter{margin-bottom:12px;padding-bottom:10px;border-bottom:1px solid var(--line)}
   .source-filter label{display:block;margin:4px 0;color:var(--dim);font-size:12px}
   .source-filter select{width:100%;padding:7px;background:var(--panel);color:var(--fg);border:1px solid var(--line);border-radius:6px}
+  .config-grid{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:14px}
+  .config-grid td{overflow-wrap:anywhere;white-space:pre-wrap}
+  .config-grid table{table-layout:fixed}
+  .config-different{background:#f2cc6022;color:var(--mark)}
+  .config-picker{max-width:100%;padding:6px;background:var(--panel);color:var(--fg);border:1px solid var(--line);border-radius:6px}
+  @media(max-width:1100px){.config-grid{grid-template-columns:1fr}}
   .source-label{font-size:11px;color:var(--accent);margin-top:4px;overflow-wrap:anywhere}
   #sourceCount{font-size:11px;color:var(--dim);margin-top:5px}
   .cid{font-family:var(--mono);font-size:11.5px}
@@ -721,13 +734,16 @@ document.getElementById('spmap').innerHTML =
 
 let cur = 0, runIdx = 0, view = 'req', showAll = false;
 let selectedSource = '';
+let configCompareKey = '';
+let configOnlyDifferences = false;
 function runsOf(it) {
   if (!selectedSource) return (showAll && it.allRuns) ? it.allRuns : (it.runs || []);
   const matching = (it.allRuns || it.runs || []).filter(r => r.source === selectedSource);
-  return showAll ? matching : matching.filter(r => r.primaryForSource);
+  return showAll ? matching : matching.filter(r => r.primaryForSource || r.embedFullResponse);
 }
 const TABS = [
   ['req','① 请求 / prompt'],
+  ['config','Env / Flags'],
   ['res','② 响应（chat 交付）'],
   ['lp','③ token 流（本次响应 · logprobs）'],
   ['tok','④ /generate 原始 token（另一路）'],
@@ -796,6 +812,7 @@ function tabsFor(it) {
   const rs = runsOf(it), t = tokenOf(it);
   return TABS.filter(([k]) =>
     (k === 'req' && (rs.length || t)) ||
+    (k === 'config' && (rs.length || t)) ||
     (k === 'res' && (rs.length || (t && (t.chat.reasoning || t.chat.content)))) ||
     (k === 'lp' && rs.some(r => r.logprobs)) ||
     (k === 'tok' && t) || (k === 'tokin' && t && t.input.n) ||
@@ -1066,6 +1083,102 @@ function tokenGrid(container, toks, total, detailEl, label) {
   });
 }
 
+function configKey(item, label, kind = 'chat') { return JSON.stringify([item.id, label, kind]); }
+function runtimeConfigRecords() {
+  const records = [];
+  D.items.forEach(item => {
+    (item.allRuns || item.runs || []).forEach(run => records.push({
+      key: configKey(item, run.label), label: item.id + ' / ' + run.label + ' · ' + run.source,
+      config: run.runtimeConfig
+    }));
+    if (item.tok) records.push({
+      key: configKey(item, item.tok.slug, 'token'), label: item.id + ' / native tokens · ' + item.tok.source,
+      config: item.tok.runtimeConfig
+    });
+  });
+  return records.filter(record => record.config &&
+    (Object.keys(record.config.env).length || Object.keys(record.config.flags).length));
+}
+function configValue(value, present, kind) {
+  if (!present) return '—';
+  if (value === null) return kind === 'env' ? 'unset' : '未设置';
+  if (value === '') return '""';
+  return typeof value === 'string' ? value : JSON.stringify(value);
+}
+function configComparable(value) {
+  if (Array.isArray(value)) return value.map(configComparable);
+  if (value && typeof value === 'object') return Object.fromEntries(Object.keys(value).sort().map(key => [key, configComparable(value[key])]));
+  return value;
+}
+function configCell(row, value, present, kind) {
+  const cell = row.insertCell(), text = configValue(value, present, kind);
+  if (text.length <= 160) { cell.textContent = text; return; }
+  const details = document.createElement('details'), summary = document.createElement('summary'), pre = document.createElement('pre');
+  summary.textContent = '展开完整值（' + text.length + ' 字符）';
+  pre.textContent = value && typeof value === 'object' ? JSON.stringify(value, null, 2) : text;
+  pre.style.maxHeight = '220px'; details.append(summary, pre); cell.append(details);
+}
+function renderRuntimeConfig(pane, item, run, tok) {
+  const current = (run ? run.runtimeConfig : tok && tok.runtimeConfig) || {env:{}, flags:{}, note:''};
+  const key = run ? configKey(item, run.label) : configKey(item, tok.slug, 'token');
+  const choices = runtimeConfigRecords().filter(record => record.key !== key);
+  if (!choices.some(record => record.key === configCompareKey)) configCompareKey = '';
+  const compare = choices.find(record => record.key === configCompareKey);
+  const controls = document.createElement('div'); controls.className = 'card';
+  const heading = document.createElement('h2'); heading.textContent = '本次实验 · Env / Flags';
+  const label = document.createElement('label'); label.textContent = '对比实验：'; label.htmlFor = 'configCompare';
+  const select = document.createElement('select'); select.id = 'configCompare'; select.className = 'config-picker';
+  const placeholder = document.createElement('option'); placeholder.value = ''; placeholder.textContent = '选择另一实验（可选）'; select.append(placeholder);
+  choices.forEach(record => {
+    const option = document.createElement('option'); option.value = record.key; option.textContent = record.label; select.append(option);
+  });
+  select.value = configCompareKey; select.disabled = !choices.length;
+  select.onchange = () => { configCompareKey = select.value; render(); };
+  const hint = document.createElement('p'); hint.className = 'hint';
+  hint.textContent = '黄色：双方都有记录且取值不同。—：该项未记录，不能据此推断部署不同。Env 的 null 表示显式 unset；Flags 的 null 表示未设置。';
+  const diffLabel = document.createElement('label'); diffLabel.style.marginLeft = '12px';
+  const diffCheck = document.createElement('input'); diffCheck.type = 'checkbox'; diffCheck.id = 'configOnlyDifferences';
+  diffCheck.checked = configOnlyDifferences; diffCheck.disabled = !compare;
+  diffCheck.onchange = () => { configOnlyDifferences = diffCheck.checked; render(); };
+  diffLabel.append(diffCheck, document.createTextNode(' 只看已记录的取值差异'));
+  controls.append(heading, label, select, diffLabel, hint);
+  if (current.note) { const p = document.createElement('p'); p.className = 'hint'; p.textContent = '当前记录来源：' + current.note; controls.append(p); }
+  if (compare && compare.config.note) { const p = document.createElement('p'); p.className = 'hint'; p.textContent = '对照记录来源：' + compare.config.note; controls.append(p); }
+  pane.append(controls);
+  const grid = document.createElement('div'); grid.className = 'config-grid';
+  for (const kind of ['env', 'flags']) {
+    const values = current[kind], baseline = compare ? compare.config[kind] : {};
+    const card = document.createElement('div'); card.className = 'card';
+    const title = document.createElement('h2'); title.textContent = kind === 'env' ? 'Env' : 'Flags';
+    const download = document.createElement('button'); download.textContent = '下载 ' + title.textContent + ' JSON';
+    download.onclick = () => {
+      const url = URL.createObjectURL(new Blob([JSON.stringify(values, null, 2)], {type:'application/json'}));
+      const a = document.createElement('a'); a.href = url; a.download = item.id + '-' + (run ? run.label : 'native') + '-' + kind + '.json'; a.click();
+      setTimeout(() => URL.revokeObjectURL(url), 0);
+    };
+    const bar = document.createElement('div'); bar.className = 'bar'; bar.append(download);
+    const table = document.createElement('table'); table.dataset.config = kind;
+    const header = table.createTHead().insertRow();
+    for (const text of ['参数', '当前实验', ...(compare ? ['对照实验'] : [])]) { const th = document.createElement('th'); th.textContent = text; header.append(th); }
+    const body = table.createTBody();
+    const keys = [...new Set([...Object.keys(values), ...Object.keys(baseline)])].sort();
+    if (!keys.length) { const cell = body.insertRow().insertCell(); cell.colSpan = compare ? 3 : 2; cell.textContent = '未记录'; }
+    for (const name of keys) {
+      const hasCurrent = Object.prototype.hasOwnProperty.call(values, name), hasBaseline = Object.prototype.hasOwnProperty.call(baseline, name);
+      const different = compare && hasCurrent && hasBaseline && JSON.stringify(configComparable(values[name])) !== JSON.stringify(configComparable(baseline[name]));
+      if (compare && configOnlyDifferences && !different) continue;
+      const row = body.insertRow(); row.dataset.key = name;
+      if (different) row.className = 'config-different';
+      row.insertCell().textContent = name;
+      configCell(row, values[name], hasCurrent, kind);
+      if (compare) configCell(row, baseline[name], hasBaseline, kind);
+    }
+    if (!body.rows.length) { const cell = body.insertRow().insertCell(); cell.colSpan = compare ? 3 : 2; cell.textContent = '没有双方均已记录的取值差异'; }
+    card.append(title, bar, table); grid.append(card);
+  }
+  pane.append(grid);
+}
+
 function render() {
   const original = D.items[cur];
   const it = selectedSource && original.sourceViews && original.sourceViews[selectedSource]
@@ -1092,6 +1205,8 @@ function render() {
     const m = run.meta;
     info += `<table>
       <tr><th>推理来源</th><td class="m" colspan="3">${esc(run.source)}</td></tr>
+      <tr><th>Env</th><td class="m">${Object.keys(run.runtimeConfig.env).length || '未记录'} 项</td>
+          <th>Flags</th><td class="m">${Object.keys(run.runtimeConfig.flags).length || '未记录'} 项 · 详见 Env / Flags</td></tr>
       <tr><th>本次运行</th><td class="m">${esc(run.label)}${run.qualifies ? ' · ✅ 已复现切断（且带 token 序列）' : ''}${run.variant ? ' · ⚠️ 变体' : ''}</td>
           <th>结束方式</th><td class="m">${endBadge(m)}</td></tr>
       <tr><th>输出预算</th><td class="m">${esc(String(m.completion_tokens))} / ${esc(String(m.max_tokens))} tokens
@@ -1158,6 +1273,8 @@ function render() {
     if (t) pane.append(paneCard('我们构造的 /generate 文本（对照用，不是 chat 端点的渲染结果）', {
       name: 'prompt.txt', text: t.wrapped || t.prompt, bytes: new TextEncoder().encode(t.wrapped || t.prompt).length,
       sha256: '-' }));
+  } else if (view === 'config') {
+    renderRuntimeConfig(pane, it, run, t);
   } else if (view === 'res') {
     if (run) {
       pane.append(paneCard('完整响应体', run.response));

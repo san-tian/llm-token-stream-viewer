@@ -44,6 +44,8 @@ class SourcesTest(unittest.TestCase):
                 if source:
                     meta["inference_source"] = source
                 (run / "meta.json").write_text(json.dumps(meta))
+                (run / "env.json").write_text(json.dumps({"EXAMPLE_ENV": name}))
+                (run / "flags.json").write_text(json.dumps({"--example-backend": name}))
                 (run / "request.json").write_text(json.dumps({"messages": [{"role": "user", "content": name}]}))
                 (run / "body.json").write_text(json.dumps({
                     "choices": [{"finish_reason": "stop",
@@ -56,6 +58,8 @@ class SourcesTest(unittest.TestCase):
                 self.assertTrue(by_name[name]["primaryForSource"])
                 self.assertIn("answer from " + name, by_name[name]["response"]["text"])
                 self.assertIn(name, by_name[name]["request"]["text"])
+                self.assertEqual(by_name[name]["runtimeConfig"]["env"]["EXAMPLE_ENV"], name)
+                self.assertEqual(by_name[name]["runtimeConfig"]["flags"]["--example-backend"], name)
             self.assertFalse(by_name["a2"]["primaryForSource"])
             self.assertEqual(by_name["a2"]["response"]["text"], "")
             self.assertEqual(by_name["legacy"]["source"], "未标注来源")

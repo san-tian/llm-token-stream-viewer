@@ -11,5 +11,6 @@
  "reasoning_chars": 152,
  "content_chars": 92,
  "inference_source": "合成示例",
+ "runtime_config_note": "合成配置，仅用于演示；不对应真实部署。",
  "demo_note": "synthetic data, no real traffic"
 }
