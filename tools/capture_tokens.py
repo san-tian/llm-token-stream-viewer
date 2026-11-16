@@ -21,6 +21,8 @@ import pathlib
 import time
 import urllib.request
 
+from runtime_config import save_runtime_config
+
 ROOT = pathlib.Path(__file__).resolve().parent
 OUT = ROOT / "tokens"
 BASE = os.environ.get("TOKEN_BASE", os.environ.get("TOKEN_BASE", "http://127.0.0.1:30000"))
@@ -129,6 +131,7 @@ def main():
         prompt = PROMPTS[slug]
         d = OUT / slug
         d.mkdir(parents=True, exist_ok=True)
+        save_runtime_config(d)
         (d / "prompt.txt").write_text(prompt)
         print(f"[{slug}] /generate (skip_special_tokens=false) …", flush=True)
         keep, el1 = gen(wrap(prompt), False)
@@ -146,7 +149,7 @@ def main():
             "slug": slug, "prompt": prompt,
             "wrapped_prompt": wrap(prompt),
             "inference_source": os.environ.get("INFERENCE_SOURCE", ""),
-                "endpoint": BASE, "model": MODEL, "max_new_tokens": MAX_NEW,
+            "endpoint": BASE, "model": MODEL, "max_new_tokens": MAX_NEW,
             "elapsed": {"gen_keep": el1, "gen_drop": el2, "chat": el3},
             "special_token_map": SPECIAL,
             "gen_keep": summarize(keep),

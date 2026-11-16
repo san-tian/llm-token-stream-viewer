@@ -13,3 +13,7 @@ sse/
 raw_http/
 tokens/
 index.html
+
+# 实验部署配置与真实抓取一并留在本地
+cases/*/*/env.json
+cases/*/*/flags.json
