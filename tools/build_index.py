@@ -260,6 +260,7 @@ def collect_runs(cid, meta_extra):
             "label": m.get("run") or rd.name,
             "primary": rd.name == keep_dir,
             "primaryForSource": keep_by_source[sources[rd.name]] == rd.name,
+            "embedFullResponse": bool(m.get("embed_full_response", False)),
             "source": sources[rd.name],
             "runtimeConfig": read_runtime_config(rd, m),
             "qualifies": bool(_ok), "reproInfo": _info,
@@ -471,7 +472,7 @@ def main():
         f_qual = [r for r in qual if _faithful(r)]
         f_all = [r for r in runs if _faithful(r)]
         # 展示哪一条由 collect_runs 统一决定（primary），保证"被展示的运行一定带 logprobs"
-        show = [r for r in runs if r.get("primary")] or runs
+        show = [r for r in runs if r.get("primary") or r.get("embedFullResponse")] or runs
         agg = {k: sum(1 for r in runs if r["verdict"]["kind"] == k)
                for k in ("seam", "residue", "clean", "no_content")}
         source_views = {}
@@ -738,7 +739,7 @@ let configOnlyDifferences = false;
 function runsOf(it) {
   if (!selectedSource) return (showAll && it.allRuns) ? it.allRuns : (it.runs || []);
   const matching = (it.allRuns || it.runs || []).filter(r => r.source === selectedSource);
-  return showAll ? matching : matching.filter(r => r.primaryForSource);
+  return showAll ? matching : matching.filter(r => r.primaryForSource || r.embedFullResponse);
 }
 const TABS = [
   ['req','① 请求 / prompt'],
