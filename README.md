@@ -51,6 +51,23 @@ open demo/index.html          # macOS；Linux 用 xdg-open，Windows 双击
 | ⑧ 头部 | HTTP 头 |
 | ⑨ 输入 prefill 溯源 | 每个 token 来自「请求内容 / 工具定义 / chat template 注入」，以及 special/文本 |
 
+## 按推理来源查看
+
+左侧 **Source · 推理来源** 显示各来源的案例数，可筛选案例；每个案例和当前运行也显示来源。
+同一案例包含不同来源的运行时，选定来源后只展示该来源的运行，并保留每个来源的一份完整响应。
+
+在每个运行的 meta.json 中设置：
+
+    {"case_id": "example", "run": "run1", "inference_source": "实验部署 A"}
+
+也可在 kit/queries/index.json 的案例条目设置 inference_source 作为该案例的默认来源。
+chat 和原生 token 采集脚本支持 INFERENCE_SOURCE 环境变量；没有标签时使用 meta.json 的
+endpoint URL 源站（协议、主机、端口，去除账号、路径、查询参数与 fragment）。旧数据没有这些字段时显示“未标注来源”，仍可正常打开。
+原始文件位置 source 字段不作为推理来源，避免把文件路径误当部署名称。仅设置显示标签不会改变采集目标。
+
+例如，同一个 case 的 run1 标记“部署 A”、run2 标记“部署 B”，选择“部署 B”后，
+请求、响应和 logprobs 来自 run2。原生 /generate token 数据仅在其来源匹配时显示。
+
 ## 背后的结论（这套工具查出来的）
 
 详见 [`docs/mechanism.md`](docs/mechanism.md)。要点：
@@ -104,6 +121,13 @@ DATA_DIR=. OUT_HTML=index.html python3 tools/build_index.py
 - **本仓库不含任何真实流量**：demo 是合成的；真实 case 的原始数据没有上传。
 - 抓取时 **`temperature` 很关键**：高温会自己造出"词沙拉 / 半句截断"，看起来像 bug 其实不是。页面里对 `temperature > 1.05` 的运行会打 **⚠️ 高温度变体** 警示。
 - `</think>` 这类 added token 的行为容易误判：`skip_special_tokens=True` **不会清**它、`split_special_tokens=True` **也拆不开**它（因为它 `special=false`）。
+
+## 验证
+
+    python3 -m unittest discover -s tests -v
+
+来源测试使用合成响应，覆盖运行与案例的标签优先级、旧数据兼容、endpoint 源站脱敏，
+以及同一案例不同来源的完整请求和响应保留；不访问推理端点。
 
 ## License
 

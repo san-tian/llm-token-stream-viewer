@@ -145,7 +145,8 @@ def main():
         meta = {
             "slug": slug, "prompt": prompt,
             "wrapped_prompt": wrap(prompt),
-            "endpoint": BASE, "model": MODEL, "max_new_tokens": MAX_NEW,
+            "inference_source": os.environ.get("INFERENCE_SOURCE", ""),
+                "endpoint": BASE, "model": MODEL, "max_new_tokens": MAX_NEW,
             "elapsed": {"gen_keep": el1, "gen_drop": el2, "chat": el3},
             "special_token_map": SPECIAL,
             "gen_keep": summarize(keep),

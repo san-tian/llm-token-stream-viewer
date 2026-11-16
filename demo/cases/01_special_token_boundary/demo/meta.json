@@ -10,5 +10,6 @@
  "n_tokens": 62,
  "reasoning_chars": 152,
  "content_chars": 92,
+ "inference_source": "合成示例",
  "demo_note": "synthetic data, no real traffic"
 }
